@@ -365,25 +365,30 @@ class GraphCast(predictor_base.Predictor):
     # Convert all input data into flat vectors for each of the grid nodes.
     # xarray (batch, time, lat, lon, level, multiple vars, forcings)
     # -> [num_grid_nodes, batch, num_channels]
+    print("  Converting all input data into flat vectors")
     grid_node_features = self._inputs_to_grid_node_features(inputs, forcings)
 
     # Transfer data for the grid to the mesh,
     # [num_mesh_nodes, batch, latent_size], [num_grid_nodes, batch, latent_size]
+    print("  Transfer data for the grid to the mesh")
     (latent_mesh_nodes, latent_grid_nodes
      ) = self._run_grid2mesh_gnn(grid_node_features)
 
     # Run message passing in the multimesh.
     # [num_mesh_nodes, batch, latent_size]
+    print("  Run message passing in the multimesh")
     updated_latent_mesh_nodes = self._run_mesh_gnn(latent_mesh_nodes)
 
     # Transfer data frome the mesh to the grid.
     # [num_grid_nodes, batch, output_size]
+    print("  Transfer data from the mesh to the grid")
     output_grid_nodes = self._run_mesh2grid_gnn(
         updated_latent_mesh_nodes, latent_grid_nodes)
 
-    # Conver output flat vectors for the grid nodes to the format of the output.
+    # Convert output flat vectors for the grid nodes to the format of the output.
     # [num_grid_nodes, batch, output_size] ->
     # xarray (batch, one time step, lat, lon, level, multiple vars)
+    print("  Convert output flat vectors for the grid nodes to the format of the output")
     return self._grid_node_outputs_to_prediction(
         output_grid_nodes, targets_template)
 
@@ -405,12 +410,13 @@ class GraphCast(predictor_base.Predictor):
             # and also one which we have struggled to get good performance
             # on at short lead times, so leaving it weighted at 1.0, equal
             # to the multi-level variables:
-            "2m_temperature": 1.0,
+            # "2m_temperature": 1.0,
+
             # New single-level variables, which we don't weight too highly
             # to avoid hurting performance on other variables.
-            "10m_u_component_of_wind": 0.1,
-            "10m_v_component_of_wind": 0.1,
-            "mean_sea_level_pressure": 0.1,
+            # "10m_u_component_of_wind": 0.1,
+            # "10m_v_component_of_wind": 0.1,
+            # "mean_sea_level_pressure": 0.1,
             "total_precipitation_6hr": 0.1,
         })
     return loss, predictions  # pytype: disable=bad-return-type  # jax-ndarray
